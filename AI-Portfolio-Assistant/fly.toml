@@ -1,0 +1,21 @@
+# Deploy to Fly.io — https://fly.io
+#   fly launch --copy-config --now      (first time; uses the Dockerfile)
+#   fly secrets set LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=...
+#   fly deploy
+app = "rag-pharma-assistant"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  path = "/api/health"
+  interval = "30s"
+  timeout = "5s"

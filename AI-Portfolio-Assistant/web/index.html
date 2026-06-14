@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Portfolio Assistant — Venkata Dommaraju</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #161b27;
+      --surface2: #1c2333;
+      --border: rgba(99,143,255,0.15);
+      --brand: #3b82f6;
+      --cyan: #06b6d4;
+      --text: #e2e8f0;
+      --muted: #8b9bbf;
+      --user-bg: linear-gradient(135deg, #2563eb, #0891b2);
+      --bot-bg: #1c2333;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    header h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--brand), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 5px;
+    }
+    .chat-shell {
+      width: 100%;
+      max-width: 720px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 80px -20px rgba(0,0,0,0.6);
+    }
+    .suggested {
+      padding: 16px 20px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .suggested-label {
+      width: 100%;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .chip {
+      padding: 6px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .chip:hover {
+      color: var(--cyan);
+      border-color: rgba(6,182,212,0.4);
+    }
+    .messages {
+      flex: 1;
+      min-height: 320px;
+      max-height: 54vh;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+    .bubble {
+      max-width: 88%;
+      padding: 11px 15px;
+      border-radius: var(--radius);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: var(--user-bg);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble.bot {
+      align-self: flex-start;
+      background: var(--bot-bg);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .source-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .source-chip {
+      font-size: 0.68rem;
+      padding: 2px 9px;
+      border-radius: 999px;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.25);
+      color: var(--brand);
+      font-weight: 500;
+    }
+    .typing {
+      align-self: flex-start;
+      padding: 12px 16px;
+      background: var(--bot-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      border-bottom-left-radius: 4px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .typing span {
+      width: 6px;
+      height: 6px;
+      background: var(--muted);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-5px); opacity: 1; }
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    #question {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #question:focus { border-color: var(--brand); }
+    #sendBtn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--brand), var(--cyan));
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.88rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    #sendBtn:hover { opacity: 0.88; }
+    #sendBtn:disabled { opacity: 0.45; cursor: default; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Portfolio Assistant</h1>
+    <p>RAG-powered — answers questions about Venkata's background, projects, and skills</p>
+  </header>
+
+  <div class="chat-shell">
+    <div class="suggested">
+      <div class="suggested-label">Try asking</div>
+      <div class="chip" onclick="ask(this.textContent)">What's his experience with LangGraph?</div>
+      <div class="chip" onclick="ask(this.textContent)">What RAG work has he done?</div>
+      <div class="chip" onclick="ask(this.textContent)">What are his top technical skills?</div>
+      <div class="chip" onclick="ask(this.textContent)">Tell me about his Pfizer work</div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="bubble bot">Hi — ask me anything about Venkata's experience, projects, or skills. I pull answers from his actual background documents.</div>
+    </div>
+
+    <div class="input-row">
+      <input id="question" type="text" placeholder="Ask about his background…" autocomplete="off" />
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const questionEl = document.getElementById('question');
+    const sendBtn = document.getElementById('sendBtn');
+
+    function scrollBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function addBubble(text, role, sources) {
+      const div = document.createElement('div');
+      div.className = 'bubble ' + role;
+      div.textContent = text;
+      if (sources && sources.length) {
+        const chips = document.createElement('div');
+        chips.className = 'source-chips';
+        const seen = new Set();
+        sources.forEach(s => {
+          if (!seen.has(s.source)) {
+            seen.add(s.source);
+            const chip = document.createElement('span');
+            chip.className = 'source-chip';
+            chip.textContent = s.source;
+            chips.appendChild(chip);
+          }
+        });
+        div.appendChild(chips);
+      }
+      messagesEl.appendChild(div);
+      scrollBottom();
+      return div;
+    }
+
+    function addTyping() {
+      const el = document.createElement('div');
+      el.className = 'typing';
+      el.innerHTML = '<span></span><span></span><span></span>';
+      messagesEl.appendChild(el);
+      scrollBottom();
+      return el;
+    }
+
+    async function ask(text) {
+      const question = (text || questionEl.value).trim();
+      if (!question) return;
+      questionEl.value = '';
+      sendBtn.disabled = true;
+
+      addBubble(question, 'user');
+      const indicator = addTyping();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question, top_k: 3 })
+        });
+        const data = await res.json();
+        indicator.remove();
+        addBubble(data.answer, 'bot', data.sources);
+      } catch (err) {
+        indicator.remove();
+        addBubble('Request failed — is the server running?', 'bot');
+      } finally {
+        sendBtn.disabled = false;
+        questionEl.focus();
+      }
+    }
+
+    sendBtn.onclick = () => ask();
+    questionEl.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+  </script>
+</body>
+</html>

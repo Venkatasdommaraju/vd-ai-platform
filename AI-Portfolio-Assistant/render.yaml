@@ -1,0 +1,18 @@
+# One-click deploy to Render — https://render.com
+# In Render: New → Blueprint → connect this repo. Then add your LLM_* values
+# in the dashboard (they're marked sync:false so they are NOT stored in git).
+services:
+  - type: web
+    name: rag-pharma-assistant
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: LLM_BASE_URL
+        sync: false          # set these in the Render dashboard, never in git
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false

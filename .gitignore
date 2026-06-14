@@ -1,0 +1,35 @@
+# secrets
+.env
+*.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# node
+node_modules/
+dist/
+.wrangler/
+
+# logs
+*.log
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
+
+# portfolio site lives in a separate private repo
+vsd-portfolio/
+
+# one-off files not needed in the repo
+Demo_Guide.docx
+Portfolio_Website_Strategy_Report.pdf

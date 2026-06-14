@@ -1,0 +1,27 @@
+{
+  "algorithm": "LogisticRegression",
+  "train_samples": 4800,
+  "test_samples": 1200,
+  "cv_roc_auc_mean": 0.7369,
+  "test_roc_auc": 0.7468,
+  "test_f1": 0.4739,
+  "test_avg_precision": 0.4787,
+  "confusion_matrix": [
+    [
+      630,
+      323
+    ],
+    [
+      70,
+      177
+    ]
+  ],
+  "top5_features": {
+    "zone_class_delta": 1.103535,
+    "zone_class_alpha": 0.890487,
+    "operational_load_high": 0.685428,
+    "operational_load_low": 0.678197,
+    "zone_class_beta": 0.350813
+  },
+  "threshold": 0.5
+}

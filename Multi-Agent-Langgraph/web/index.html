@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Agent LangGraph Service</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #161b27;
+      --surface2: #1c2333;
+      --surface3: #212d42;
+      --border: rgba(99,143,255,0.14);
+      --brand: #3b82f6;
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --purple: #a78bfa;
+      --text: #e2e8f0;
+      --muted: #8b9bbf;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .header-left h1 {
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--brand), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-left p {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .header-badge {
+      font-size: 0.72rem;
+      color: var(--green);
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.25);
+      border-radius: 999px;
+      padding: 3px 10px;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      flex: 1;
+      overflow: hidden;
+    }
+    @media (max-width: 820px) {
+      .main { grid-template-columns: 1fr; }
+      .trace-panel { border-left: none; border-top: 1px solid var(--border); max-height: 260px; }
+    }
+
+    /* Chat panel */
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 57px);
+    }
+    .suggested {
+      padding: 14px 18px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+    .suggested-label {
+      font-size: 0.69rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 600;
+      width: 100%;
+    }
+    .chip {
+      font-size: 0.75rem;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .chip:hover { color: var(--cyan); border-color: rgba(6,182,212,0.35); }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+
+    .bubble {
+      max-width: 90%;
+      padding: 11px 15px;
+      border-radius: 14px;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #2563eb, #0891b2);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble.bot {
+      align-self: flex-start;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .source-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .source-chip {
+      font-size: 0.67rem;
+      padding: 2px 9px;
+      border-radius: 999px;
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.22);
+      color: var(--brand);
+      font-weight: 500;
+    }
+    .typing {
+      align-self: flex-start;
+      padding: 12px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      border-bottom-left-radius: 4px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .typing span {
+      width: 6px; height: 6px;
+      background: var(--muted);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%,80%,100% { transform: translateY(0); opacity: 0.35; }
+      40% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    .input-row {
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      background: var(--surface);
+    }
+    #question {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.88rem;
+      font-family: inherit;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #question:focus { border-color: var(--brand); }
+    #sendBtn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--brand), var(--cyan));
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.88rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    #sendBtn:hover { opacity: 0.88; }
+    #sendBtn:disabled { opacity: 0.45; cursor: default; }
+
+    /* Agent trace panel */
+    .trace-panel {
+      border-left: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 57px);
+      overflow: hidden;
+    }
+    .trace-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .trace-header .trace-title { color: var(--text); }
+    .trace-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .trace-body::-webkit-scrollbar { width: 3px; }
+    .trace-body::-webkit-scrollbar-thumb { background: var(--surface2); }
+
+    .trace-step {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .trace-step-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--surface3);
+      border: 2px solid var(--surface3);
+      flex-shrink: 0;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .step-dot.active { background: var(--orange); border-color: var(--orange); animation: pulse 1s infinite; }
+    .step-dot.done { background: var(--green); border-color: var(--green); }
+    .step-dot.error { background: var(--red); border-color: var(--red); }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .step-name {
+      font-size: 0.78rem;
+      font-weight: 600;
+      font-family: var(--mono);
+      color: var(--muted);
+      transition: color 0.3s;
+    }
+    .step-name.active { color: var(--orange); }
+    .step-name.done { color: var(--text); }
+    .step-ms {
+      margin-left: auto;
+      font-size: 0.67rem;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+    .step-connector {
+      width: 2px;
+      height: 10px;
+      background: var(--surface3);
+      margin-left: 3px;
+      transition: background 0.3s;
+    }
+    .step-connector.done { background: var(--green); }
+    .step-detail {
+      margin-left: 16px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 8px;
+      max-height: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      transition: opacity 0.4s;
+      opacity: 0;
+      display: none;
+    }
+    .step-detail.show { display: -webkit-box; opacity: 1; }
+
+    .trace-empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      padding: 40px 20px;
+      line-height: 1.7;
+    }
+    .trace-empty .icon {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 10px;
+      opacity: 0.4;
+    }
+
+    .plan-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .plan-box .plan-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--purple);
+      margin-bottom: 5px;
+    }
+    .critique-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .critique-box .critique-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--cyan);
+      margin-bottom: 5px;
+    }
+    .critique-pass { color: var(--green); }
+    .critique-revise { color: var(--orange); }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--muted);
+      padding: 0 2px;
+    }
+    .meta-row span:last-child { font-family: var(--mono); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1>Multi-Agent LangGraph Service</h1>
+      <p>planner &rarr; retriever &rarr; analyst &rarr; critic &rarr; synthesize</p>
+    </div>
+    <div class="header-badge">FastAPI + LangGraph</div>
+  </header>
+
+  <div class="main">
+    <!-- Chat panel -->
+    <div class="chat-panel">
+      <div class="suggested">
+        <div class="suggested-label">Suggested questions</div>
+        <div class="chip" onclick="ask(this.textContent)">How does the planner-critic loop work?</div>
+        <div class="chip" onclick="ask(this.textContent)">What retrieval backends are supported?</div>
+        <div class="chip" onclick="ask(this.textContent)">How does it handle revision loops?</div>
+        <div class="chip" onclick="ask(this.textContent)">What LLMs does it support?</div>
+      </div>
+
+      <div class="messages" id="messages">
+        <div class="bubble bot">Ask me about the agent architecture, stack, retrieval setup, or LLM configuration. Watch the agent trace panel on the right as it runs.</div>
+      </div>
+
+      <div class="input-row">
+        <input id="question" type="text" placeholder="Ask about the architecture…" autocomplete="off" />
+        <button id="sendBtn">Send</button>
+      </div>
+    </div>
+
+    <!-- Trace panel -->
+    <div class="trace-panel">
+      <div class="trace-header">
+        <span class="trace-title">Agent Trace</span>
+        <span id="traceRevisions"></span>
+      </div>
+      <div class="trace-body" id="traceBody">
+        <div class="trace-empty">
+          <span class="icon">&#9680;</span>
+          Run a query to see the agent graph execute step by step.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const questionEl = document.getElementById('question');
+    const sendBtn = document.getElementById('sendBtn');
+    const traceBody = document.getElementById('traceBody');
+    const traceRevisions = document.getElementById('traceRevisions');
+
+    const STEPS = [
+      { id: 'planner', label: 'PLAN' },
+      { id: 'retriever', label: 'RETRIEVE' },
+      { id: 'analyst', label: 'ANALYZE' },
+      { id: 'critic', label: 'CRITIQUE' },
+      { id: 'synthesize', label: 'SYNTHESIZE' },
+    ];
+
+    function scrollBottom() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function addBubble(text, role, sources) {
+      const div = document.createElement('div');
+      div.className = 'bubble ' + role;
+      div.textContent = text;
+      if (sources && sources.length) {
+        const chips = document.createElement('div');
+        chips.className = 'source-chips';
+        const seen = new Set();
+        sources.forEach(s => {
+          if (!seen.has(s.source)) {
+            seen.add(s.source);
+            const c = document.createElement('span');
+            c.className = 'source-chip';
+            c.textContent = s.source;
+            chips.appendChild(c);
+          }
+        });
+        div.appendChild(chips);
+      }
+      messagesEl.appendChild(div);
+      scrollBottom();
+      return div;
+    }
+
+    function addTyping() {
+      const el = document.createElement('div');
+      el.className = 'typing';
+      el.innerHTML = '<span></span><span></span><span></span>';
+      messagesEl.appendChild(el);
+      scrollBottom();
+      return el;
+    }
+
+    // Build trace steps in the panel
+    let stepEls = {};
+
+    function buildTrace() {
+      traceBody.innerHTML = '';
+      stepEls = {};
+      traceRevisions.textContent = '';
+
+      STEPS.forEach((step, idx) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'trace-step';
+
+        const hdr = document.createElement('div');
+        hdr.className = 'trace-step-header';
+
+        const dot = document.createElement('div');
+        dot.className = 'step-dot';
+
+        const name = document.createElement('span');
+        name.className = 'step-name';
+        name.textContent = step.label;
+
+        const ms = document.createElement('span');
+        ms.className = 'step-ms';
+
+        hdr.appendChild(dot);
+        hdr.appendChild(name);
+        hdr.appendChild(ms);
+        wrapper.appendChild(hdr);
+
+        if (idx < STEPS.length - 1) {
+          const conn = document.createElement('div');
+          conn.className = 'step-connector';
+          wrapper.appendChild(conn);
+          stepEls[step.id] = { dot, name, ms, conn };
+        } else {
+          stepEls[step.id] = { dot, name, ms };
+        }
+
+        traceBody.appendChild(wrapper);
+      });
+    }
+
+    function markStep(id, state) {
+      const el = stepEls[id];
+      if (!el) return;
+      el.dot.className = 'step-dot ' + state;
+      el.name.className = 'step-name ' + state;
+      if (el.conn && state === 'done') el.conn.className = 'step-connector done';
+    }
+
+    function animateSteps(data) {
+      const delays = [0, 150, 350, 550, 800];
+      STEPS.forEach((step, i) => {
+        setTimeout(() => markStep(step.id, 'active'), delays[i]);
+        setTimeout(() => markStep(step.id, 'done'), delays[i] + 280);
+      });
+
+      // After all done, fill in plan, critique, revisions
+      setTimeout(() => {
+        traceRevisions.textContent = `${data.revisions} revision${data.revisions !== 1 ? 's' : ''}`;
+
+        if (data.plan) {
+          const planBox = document.createElement('div');
+          planBox.className = 'plan-box';
+          planBox.innerHTML = `<div class="plan-label">Planner output</div>${escHtml(data.plan)}`;
+          traceBody.appendChild(planBox);
+        }
+        if (data.critique) {
+          const critiqueBox = document.createElement('div');
+          critiqueBox.className = 'critique-box';
+          const isPass = data.critique.trim().toUpperCase().startsWith('PASS');
+          critiqueBox.innerHTML = `<div class="critique-label">Critic verdict</div><span class="${isPass ? 'critique-pass' : 'critique-revise'}">${escHtml(data.critique)}</span>`;
+          traceBody.appendChild(critiqueBox);
+        }
+
+        const metaRow = document.createElement('div');
+        metaRow.className = 'meta-row';
+        metaRow.innerHTML = `<span>model</span><span>${escHtml(data.model)}</span>`;
+        traceBody.appendChild(metaRow);
+
+        const groundedRow = document.createElement('div');
+        groundedRow.className = 'meta-row';
+        groundedRow.innerHTML = `<span>grounded</span><span style="color:${data.grounded ? 'var(--green)' : 'var(--red)'}">${data.grounded}</span>`;
+        traceBody.appendChild(groundedRow);
+      }, 1050);
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    async function ask(text) {
+      const question = (text || questionEl.value).trim();
+      if (!question) return;
+      questionEl.value = '';
+      sendBtn.disabled = true;
+
+      addBubble(question, 'user');
+      const indicator = addTyping();
+      buildTrace();
+
+      // Animate steps immediately (optimistic — the response time is opaque to us)
+      animateSteps({ plan: '', critique: '', revisions: 0, model: '…', grounded: false });
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+        const data = await res.json();
+        indicator.remove();
+        addBubble(data.answer, 'bot', data.sources);
+
+        // Re-run trace animation with real data
+        buildTrace();
+        animateSteps(data);
+      } catch (err) {
+        indicator.remove();
+        addBubble('Request failed — is the server running?', 'bot');
+        buildTrace();
+      } finally {
+        sendBtn.disabled = false;
+        questionEl.focus();
+      }
+    }
+
+    sendBtn.onclick = () => ask();
+    questionEl.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+  </script>
+</body>
+</html>

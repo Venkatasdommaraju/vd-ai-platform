@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IoT Sensor Anomaly Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --card: #161b27;
+      --card2: #1c2333;
+      --border: #2a3347;
+      --accent: #00d4ff;
+      --accent2: #0099cc;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --font: 'Inter', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      letter-spacing: 0.02em;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .card-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 14px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .field-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    select {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.85rem;
+      padding: 8px 10px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238892a4' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+
+    select:focus { border-color: var(--accent); }
+
+    .slider-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .slider-header label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .slider-val {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--accent);
+      min-width: 52px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 14px rgba(0, 212, 255, 0.7);
+      transform: scale(1.15);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+    }
+
+    .sliders-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .sliders-grid .full-width { grid-column: span 2; }
+
+    .predict-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), #0077ff);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+    }
+
+    .predict-btn:hover { opacity: 0.9; box-shadow: 0 6px 28px rgba(0, 212, 255, 0.4); }
+    .predict-btn:active { transform: scale(0.98); }
+    .predict-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Right panel */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .gauge-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 24px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .gauge-wrap {
+      position: relative;
+      width: 240px;
+      height: 130px;
+      margin-bottom: 8px;
+    }
+
+    .gauge-svg { width: 100%; height: 100%; overflow: visible; }
+
+    .gauge-track {
+      fill: none;
+      stroke: var(--card2);
+      stroke-width: 16;
+      stroke-linecap: round;
+    }
+
+    .gauge-fill {
+      fill: none;
+      stroke-width: 16;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.6s ease;
+    }
+
+    .gauge-center {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    .gauge-pct {
+      font-size: 2.4rem;
+      font-weight: 700;
+      font-family: var(--mono);
+      color: var(--text);
+      line-height: 1;
+      transition: color 0.6s ease;
+    }
+
+    .gauge-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 12px;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    .risk-badge.low  { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+    .risk-badge.medium { background: rgba(245, 158, 11, 0.15); color: var(--orange); border: 1px solid rgba(245,158,11,0.3); }
+    .risk-badge.high { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+
+    .risk-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.75); }
+    }
+
+    .status-text {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .loading-overlay {
+      display: none;
+      font-size: 0.8rem;
+      color: var(--accent);
+      font-family: var(--mono);
+      margin-top: 8px;
+      animation: blink 1s step-start infinite;
+    }
+
+    @keyframes blink { 50% { opacity: 0.3; } }
+
+    .metrics-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    .kv-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .kv-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .kv-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .kv-key {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .kv-val {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .kv-val.accent { color: var(--accent); }
+
+    .feat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    .feat-bars { margin-top: 8px; display: flex; flex-direction: column; gap: 10px; }
+
+    .feat-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .feat-name {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      width: 150px;
+      flex-shrink: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .feat-bar-bg {
+      flex: 1;
+      height: 8px;
+      background: var(--card2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .feat-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #7c3aed);
+      border-radius: 4px;
+      transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .feat-score {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      width: 40px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>IoT Sensor Anomaly Detection</h1>
+  <p>Real-time ML inference &mdash; logistic regression pipeline &middot; scikit-learn &middot; FastAPI</p>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: Input Panel -->
+  <div class="card">
+    <div class="card-title">Sensor Reading Input</div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Zone Class</label>
+        <select id="zone_class">
+          <option value="alpha">Alpha</option>
+          <option value="beta">Beta</option>
+          <option value="gamma">Gamma</option>
+          <option value="delta">Delta</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Operational Load</label>
+        <select id="operational_load">
+          <option value="low">Low</option>
+          <option value="standard">Standard</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Time Period</label>
+        <select id="time_period">
+          <option value="day">Day</option>
+          <option value="night">Night</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Sensor Mode</label>
+        <select id="sensor_mode">
+          <option value="active">Active</option>
+          <option value="passive">Passive</option>
+          <option value="contact">Contact</option>
+          <option value="mobile">Mobile</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sliders-grid">
+      <div class="slider-field">
+        <div class="slider-header">
+          <label>Pressure Delta</label>
+          <span class="slider-val" id="val_pressure">15.0 Pa</span>
+        </div>
+        <input type="range" id="pressure_delta_pa" min="5" max="25" step="0.5" value="15" />
+      </div>
+      <div class="slider-field">
+        <div class="slider-header">
+          <label>Temperature</label>
+          <span class="slider-val" id="val_temp">22.0 °C</span>
+        </div>
+        <input type="range" id="temperature_c" min="18" max="28" step="0.5" value="22" />
+      </div>
+      <div class="slider-field">
+        <div class="slider-header">
+          <label>Humidity</label>
+          <span class="slider-val" id="val_humidity">45 %</span>
+        </div>
+        <input type="range" id="humidity_pct" min="30" max="70" step="1" value="45" />
+      </div>
+      <div class="slider-field">
+        <div class="slider-header">
+          <label>Particle Density</label>
+          <span class="slider-val" id="val_particle">5000</span>
+        </div>
+        <input type="range" id="particle_density" min="500" max="20000" step="100" value="5000" />
+      </div>
+      <div class="slider-field">
+        <div class="slider-header">
+          <label>Occupancy</label>
+          <span class="slider-val" id="val_occupancy">3</span>
+        </div>
+        <input type="range" id="occupancy_count" min="0" max="10" step="1" value="3" />
+      </div>
+      <div class="slider-field">
+        <div class="slider-header">
+          <label>Maintenance Lag</label>
+          <span class="slider-val" id="val_maint">4 days</span>
+        </div>
+        <input type="range" id="maintenance_lag_days" min="0" max="14" step="1" value="4" />
+      </div>
+      <div class="slider-field full-width">
+        <div class="slider-header">
+          <label>Airflow</label>
+          <span class="slider-val" id="val_airflow">85 %</span>
+        </div>
+        <input type="range" id="airflow_pct" min="60" max="100" step="1" value="85" />
+      </div>
+    </div>
+
+    <button class="predict-btn" id="predictBtn" onclick="runPrediction()">Run Prediction</button>
+    <div class="loading-overlay" id="loading">&#9632; Inferencing model&hellip;</div>
+  </div>
+
+  <!-- RIGHT: Output Panel -->
+  <div class="right-panel">
+
+    <!-- Gauge Card -->
+    <div class="gauge-card card-title-wrap">
+      <div class="card-title" style="align-self:flex-start; width:100%;">Anomaly Probability</div>
+
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 240 130">
+          <!-- Track arc: 180 degrees, half circle -->
+          <path id="gaugeTrack" class="gauge-track"
+            d="M 20 120 A 100 100 0 0 1 220 120"
+            stroke-dasharray="314.16 314.16"
+            stroke-dashoffset="0"
+          />
+          <path id="gaugeFill" class="gauge-fill"
+            d="M 20 120 A 100 100 0 0 1 220 120"
+            stroke="#10b981"
+            stroke-dasharray="314.16 314.16"
+            stroke-dashoffset="314.16"
+          />
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-pct" id="gaugePct">—</div>
+          <div class="gauge-label">Anomaly Score</div>
+        </div>
+      </div>
+
+      <div class="risk-badge low" id="riskBadge">LOW RISK</div>
+      <div class="status-text" id="statusText">Awaiting first prediction&hellip;</div>
+    </div>
+
+    <!-- Model Performance -->
+    <div class="metrics-card">
+      <div class="card-title">Model Performance</div>
+      <div class="kv-list">
+        <div class="kv-row"><span class="kv-key">Algorithm</span><span class="kv-val accent" id="m_algo">—</span></div>
+        <div class="kv-row"><span class="kv-key">Training Samples</span><span class="kv-val" id="m_train">—</span></div>
+        <div class="kv-row"><span class="kv-key">ROC-AUC</span><span class="kv-val accent" id="m_roc">—</span></div>
+        <div class="kv-row"><span class="kv-key">F1 Score</span><span class="kv-val" id="m_f1">—</span></div>
+        <div class="kv-row"><span class="kv-key">Decision Threshold</span><span class="kv-val" id="m_thresh">0.50</span></div>
+      </div>
+    </div>
+
+    <!-- Feature Importance -->
+    <div class="feat-card">
+      <div class="card-title">Feature Importance (Top 5)</div>
+      <div class="feat-bars" id="featBars">
+        <div style="color:var(--muted);font-size:0.78rem;">Loading metrics&hellip;</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const sliderConfig = {
+    pressure_delta_pa: { el: 'pressure_delta_pa', valEl: 'val_pressure', fmt: v => v + ' Pa' },
+    temperature_c:     { el: 'temperature_c',     valEl: 'val_temp',     fmt: v => v + ' °C' },
+    humidity_pct:      { el: 'humidity_pct',       valEl: 'val_humidity', fmt: v => v + ' %' },
+    particle_density:  { el: 'particle_density',   valEl: 'val_particle', fmt: v => Number(v).toLocaleString() },
+    occupancy_count:   { el: 'occupancy_count',    valEl: 'val_occupancy',fmt: v => v },
+    maintenance_lag_days: { el: 'maintenance_lag_days', valEl: 'val_maint', fmt: v => v + ' days' },
+    airflow_pct:       { el: 'airflow_pct',        valEl: 'val_airflow',  fmt: v => v + ' %' },
+  };
+
+  Object.values(sliderConfig).forEach(({ el, valEl, fmt }) => {
+    const input = document.getElementById(el);
+    const label = document.getElementById(valEl);
+    input.addEventListener('input', () => { label.textContent = fmt(input.value); });
+  });
+
+  const ARC_LEN = 314.16;
+
+  function setGauge(prob) {
+    const pct = Math.round(prob * 100);
+    const fill = ARC_LEN - (ARC_LEN * prob);
+    const gaugeFill = document.getElementById('gaugeFill');
+    gaugeFill.style.strokeDashoffset = fill;
+
+    let color;
+    if (prob < 0.30) color = '#10b981';
+    else if (prob < 0.60) color = '#f59e0b';
+    else color = '#ef4444';
+    gaugeFill.style.stroke = color;
+
+    const pctEl = document.getElementById('gaugePct');
+    pctEl.textContent = pct + '%';
+    pctEl.style.color = color;
+  }
+
+  function setRiskBadge(band) {
+    const badge = document.getElementById('riskBadge');
+    badge.className = 'risk-badge ' + band;
+    badge.textContent = band.toUpperCase() + ' RISK';
+  }
+
+  function getPayload() {
+    return {
+      zone_class:           document.getElementById('zone_class').value,
+      operational_load:     document.getElementById('operational_load').value,
+      time_period:          document.getElementById('time_period').value,
+      sensor_mode:          document.getElementById('sensor_mode').value,
+      pressure_delta_pa:    parseFloat(document.getElementById('pressure_delta_pa').value),
+      temperature_c:        parseFloat(document.getElementById('temperature_c').value),
+      humidity_pct:         parseFloat(document.getElementById('humidity_pct').value),
+      particle_density:     parseFloat(document.getElementById('particle_density').value),
+      occupancy_count:      parseInt(document.getElementById('occupancy_count').value),
+      maintenance_lag_days: parseInt(document.getElementById('maintenance_lag_days').value),
+      airflow_pct:          parseFloat(document.getElementById('airflow_pct').value),
+    };
+  }
+
+  async function runPrediction() {
+    const btn = document.getElementById('predictBtn');
+    const loading = document.getElementById('loading');
+    btn.disabled = true;
+    loading.style.display = 'block';
+
+    try {
+      const resp = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(getPayload()),
+      });
+
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+
+      setGauge(data.anomaly_probability);
+      setRiskBadge(data.risk_band);
+
+      const statusEl = document.getElementById('statusText');
+      statusEl.textContent = data.anomaly_predicted
+        ? 'Anomaly detected — immediate attention required.'
+        : 'No anomaly predicted — system within normal parameters.';
+      statusEl.style.color = data.anomaly_predicted ? 'var(--red)' : 'var(--green)';
+
+    } catch (e) {
+      document.getElementById('statusText').textContent = 'Error: ' + e.message;
+    } finally {
+      btn.disabled = false;
+      loading.style.display = 'none';
+    }
+  }
+
+  async function loadMetrics() {
+    try {
+      const resp = await fetch('/web/metrics.json');
+      if (!resp.ok) return;
+      const m = await resp.json();
+
+      document.getElementById('m_algo').textContent = m.algorithm || '—';
+      document.getElementById('m_train').textContent = m.train_samples ? m.train_samples.toLocaleString() : '—';
+      document.getElementById('m_roc').textContent = m.test_roc_auc ? m.test_roc_auc.toFixed(4) : '—';
+      document.getElementById('m_f1').textContent = m.test_f1 ? m.test_f1.toFixed(4) : '—';
+      document.getElementById('m_thresh').textContent = (m.threshold || 0.5).toFixed(2);
+
+      if (m.top5_features) {
+        const entries = Object.entries(m.top5_features);
+        const maxVal = Math.max(...entries.map(e => e[1]));
+        const container = document.getElementById('featBars');
+        container.innerHTML = '';
+        entries.forEach(([name, val]) => {
+          const pct = maxVal > 0 ? (val / maxVal * 100).toFixed(1) : 0;
+          const shortName = name.replace(/^(cat__|num__)/, '').replace(/_/g, ' ');
+          container.innerHTML += `
+            <div class="feat-row">
+              <span class="feat-name" title="${name}">${shortName}</span>
+              <div class="feat-bar-bg"><div class="feat-bar-fill" style="width:${pct}%"></div></div>
+              <span class="feat-score">${val.toFixed(3)}</span>
+            </div>`;
+        });
+      }
+    } catch (_) {}
+  }
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    await loadMetrics();
+    runPrediction();
+  });
+</script>
+</body>
+</html>
