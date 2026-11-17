@@ -13,6 +13,21 @@ def tokenize(text: str) -> list[str]:
     return _TOKEN.findall(text.lower())
 
 
+# Words that carry no meaning for retrieval. Without this, a question such as
+# "Tell me about the REMS project" is matched on "about" and "the" rather than
+# on "REMS", and short generic paragraphs outrank the relevant one.
+STOPWORDS = frozenset(
+    "a an and any are as at be been by can did do does for from had has have he her him his "
+    "how i in is it its me my of on or she tell that the their them they this to was were what "
+    "when where which who whom why will with would you your about s done".split()
+)
+
+
+def terms(text: str) -> list[str]:
+    """Tokens used for scoring: lower-cased words with stopwords removed."""
+    return [t for t in tokenize(text) if t not in STOPWORDS]
+
+
 @dataclass
 class Chunk:
     id: str
@@ -38,7 +53,7 @@ class TfidfRetriever:
         self.df: Counter[str] = Counter()
         self.tfs: list[Counter[str]] = []
         for c in chunks:
-            tf = Counter(tokenize(c.text))
+            tf = Counter(terms(c.text))
             self.tfs.append(tf)
             for term in tf:
                 self.df[term] += 1
@@ -51,7 +66,7 @@ class TfidfRetriever:
         return {t: freq * self.idf.get(t, 0.0) for t, freq in tf.items()}
 
     def search(self, query: str, k: int = 3) -> list[tuple[Chunk, float]]:
-        q_tf = Counter(tokenize(query))
+        q_tf = Counter(terms(query))
         q_vec = self._vectorize(q_tf)
         q_norm = math.sqrt(sum(v * v for v in q_vec.values())) or 1e-9
         scored: list[tuple[Chunk, float]] = []
